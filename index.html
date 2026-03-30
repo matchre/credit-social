@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f1923">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Crédit Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1923;
+      --surface: #1a2535;
+      --surface2: #22304a;
+      --border: #2a3d5a;
+      --accent: #00e5a0;
+      --accent2: #00b8ff;
+      --red: #ff4d6d;
+      --orange: #ff9f1c;
+      --green: #2ec4b6;
+      --green-dark: #00e5a0;
+      --text: #e8f0fe;
+      --text-muted: #6b7fa3;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Sora', sans-serif;
+      --nav-h: 64px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    /* ── APP SHELL ── */
+    #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+      position: relative;
+    }
+    header h1 {
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+    header .subtitle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .header-badge {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── CONTENT AREA ── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── BOTTOM NAV ── */
+    nav {
+      display: flex;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      padding-bottom: var(--safe-bottom);
+    }
+    nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 4px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer;
+      transition: color 0.2s;
+      font-family: var(--sans);
+      font-size: 0.65rem;
+      letter-spacing: 0.05em;
+    }
+    nav button svg { width: 22px; height: 22px; }
+    nav button.active { color: var(--accent); }
+    nav button.active svg { filter: drop-shadow(0 0 4px var(--accent)); }
+
+    /* ── SCREENS ── */
+    .screen { display: none; padding: 0; }
+    .screen.active { display: block; }
+
+    /* ── SCREEN: SÉANCE ── */
+    .seance-header {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .seance-header input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      padding: 8px 12px;
+    }
+    .btn-save {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: 0.05em;
+      transition: opacity 0.2s;
+    }
+    .btn-save:active { opacity: 0.7; }
+
+    .student-card {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+    }
+    .student-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .student-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .student-score {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      min-width: 52px;
+      text-align: right;
+    }
+    .score-20 { color: var(--green-dark); }
+    .score-hi { color: var(--green); }
+    .score-mid { color: var(--orange); }
+    .score-lo { color: var(--red); }
+
+    .criteria-row {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .crit-btn {
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      min-width: 52px;
+      flex: 1;
+    }
+    .crit-btn .crit-icon { font-size: 1rem; }
+    .crit-btn .crit-label { font-size: 0.55rem; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.05em; }
+    .crit-btn .crit-val { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); font-weight: 700; }
+    .crit-btn.on {
+      background: rgba(255,77,109,0.15);
+      border-color: var(--red);
+    }
+    .crit-btn.on .crit-val { color: var(--red); }
+    .crit-btn.on .crit-label { color: var(--red); }
+
+    /* ── SCREEN: BILAN ── */
+    .bilan-toolbar {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .bilan-toolbar .session-count {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex: 1;
+    }
+    .btn-scroll {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 7px 12px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: border-color 0.2s;
+    }
+    .btn-scroll.on { border-color: var(--accent); color: var(--accent); }
+    .scroll-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.2s;
+    }
+    .btn-scroll.on .scroll-dot { background: var(--red); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .legend-bar {
+      display: flex; gap: 12px; padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .leg { display: flex; align-items: center; gap: 5px; font-size: 0.65rem; color: var(--text-muted); }
+    .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+    .bilan-row {
+      display: flex; align-items: center;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      transition: background 0.15s;
+    }
+    .bilan-row:active { background: var(--surface2); }
+    .bilan-rank {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      width: 22px;
+    }
+    .bilan-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
+    .bilan-bar-wrap { width: 80px; margin: 0 10px; }
+    .bilan-bar-bg { background: var(--surface2); border-radius: 3px; height: 5px; overflow: hidden; }
+    .bilan-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+    .bilan-score {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    /* ── SCREEN: HISTORIQUE ── */
+    .hist-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .hist-empty .big { font-size: 2.5rem; margin-bottom: 12px; }
+
+    .session-card {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+    .session-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .session-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .session-date {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+    .session-stats {
+      display: flex; gap: 12px; font-size: 0.72rem; color: var(--text-muted);
+    }
+    .session-stats span { display: flex; align-items: center; gap: 4px; }
+    .session-actions {
+      display: flex; gap: 8px; margin-top: 10px;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .btn-sm:active { opacity: 0.7; }
+    .btn-sm.danger { border-color: var(--red); color: var(--red); }
+    .btn-sm.primary { border-color: var(--accent); color: var(--accent); }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
+      left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 20px;
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 400;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── MODAL ── */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: flex-end;
+    }
+    #modal-overlay.show { display: flex; }
+    #modal {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 20px calc(20px + var(--safe-bottom));
+      width: 100%;
+      border-top: 1px solid var(--border);
+    }
+    #modal h2 { font-size: 1rem; margin-bottom: 16px; color: var(--accent); font-family: var(--mono); }
+    #modal-content { font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
+    #modal-close {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    /* scrollbar */
+    #content::-webkit-scrollbar { width: 3px; }
+    #content::-webkit-scrollbar-track { background: transparent; }
+    #content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── SYNC ── */
+    .header-right { display:flex; align-items:center; gap:8px; }
+    .sync-indicator {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    .sync-indicator.ok   { background: var(--accent); }
+    .sync-indicator.err  { background: var(--red); }
+    .sync-indicator.busy { background: var(--orange); animation: spin-pulse 1s infinite; }
+    @keyframes spin-pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    .btn-icon {
+      background: none; border: none; cursor: pointer; padding: 4px;
+      color: var(--text-muted); font-size: 1.1rem; line-height: 1;
+      transition: color 0.2s;
+    }
+    .btn-icon:active { color: var(--accent); }
+
+    /* ── SETTINGS MODAL ── */
+    #settings-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 300; align-items: flex-end;
+    }
+    #settings-overlay.show { display: flex; }
+    #settings-panel {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 20px calc(20px + var(--safe-bottom));
+      width: 100%;
+      border-top: 1px solid var(--border);
+      max-height: 85vh; overflow-y: auto;
+    }
+    #settings-panel h2 {
+      font-family: var(--mono); font-size: 0.9rem;
+      color: var(--accent); margin-bottom: 4px; letter-spacing: 0.08em;
+    }
+    #settings-panel .hint {
+      font-size: 0.7rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;
+    }
+    #settings-panel .hint a { color: var(--accent2); }
+    .field-group { margin-bottom: 12px; }
+    .field-group label {
+      display: block; font-size: 0.72rem; color: var(--text-muted);
+      margin-bottom: 5px; letter-spacing: 0.06em; text-transform: uppercase;
+      font-family: var(--mono);
+    }
+    .field-group input {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-family: var(--sans); font-size: 0.85rem;
+      padding: 10px 12px;
+    }
+    .field-group input:focus { outline: none; border-color: var(--accent); }
+    .settings-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-full {
+      flex: 1; padding: 12px; border-radius: 10px;
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.06em; border: none;
+      transition: opacity 0.2s;
+    }
+    .btn-full:active { opacity: 0.7; }
+    .btn-full.primary { background: var(--accent); color: var(--bg); }
+    .btn-full.ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+    .btn-full.danger { background: var(--surface2); border: 1px solid var(--red); color: var(--red); }
+    .sync-status-line {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.72rem; color: var(--text-muted);
+      font-family: var(--mono); margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div>
+      <h1>// CRÉDIT SOCIAL</h1>
+      <div class="subtitle">Suivi de classe</div>
+    </div>
+    <div class="header-right">
+      <span class="sync-indicator" id="sync-dot" title="Statut sync"></span>
+      <div class="header-badge" id="header-badge">0 SÉANCES</div>
+      <button class="btn-icon" onclick="openSettings()" title="Paramètres Nextcloud">⚙️</button>
+    </div>
+  </header>
+
+  <div id="content">
+    <!-- SÉANCE -->
+    <div class="screen active" id="screen-seance">
+      <div class="seance-header">
+        <input type="text" id="seance-name" placeholder="Nom de la séance (ex: Lundi 31 mars)">
+        <button class="btn-save" onclick="saveSession()">💾 SAVE</button>
+      </div>
+      <div id="students-list"></div>
+    </div>
+
+    <!-- BILAN -->
+    <div class="screen" id="screen-bilan">
+      <div class="bilan-toolbar">
+        <span class="session-count" id="bilan-session-count">— séances</span>
+        <button class="btn-scroll" id="scroll-btn" onclick="toggleAutoScroll()">
+          <span class="scroll-dot"></span> AUTO
+        </button>
+        <button class="btn-sm primary" onclick="syncToNextcloud(true)">☁️ SYNC</button>
+        <button class="btn-sm primary" onclick="exportBilanCSV()">📥 CSV</button>
+      </div>
+      <div id="moyenne-globale-bar" style="display:none;
+        padding:10px 16px;
+        background:var(--surface2);
+        border-bottom:1px solid var(--border);
+        display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:0.75rem;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;font-family:var(--mono)">
+          Moyenne globale de la classe
+        </span>
+        <span id="moyenne-globale-val" style="font-family:var(--mono);font-size:1.3rem;font-weight:700;">–</span>
+      </div>
+      <div class="legend-bar">
+        <span class="leg"><span class="leg-dot" style="background:var(--red)"></span>0–5</span>
+        <span class="leg"><span class="leg-dot" style="background:var(--orange)"></span>5–10</span>
+        <span class="leg"><span class="leg-dot" style="background:var(--green)"></span>10–15</span>
+        <span class="leg"><span class="leg-dot" style="background:var(--green-dark)"></span>15–20</span>
+      </div>
+      <div id="bilan-list"></div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div class="screen" id="screen-hist">
+      <div id="hist-list"></div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="active" id="nav-seance" onclick="showScreen('seance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      Séance
+    </button>
+    <button id="nav-bilan" onclick="showScreen('bilan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      Bilan
+    </button>
+    <button id="nav-hist" onclick="showScreen('hist')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Historique
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+<div id="modal-overlay" onclick="closeModal()">
+  <div id="modal" onclick="event.stopPropagation()">
+    <h2 id="modal-title"></h2>
+    <div id="modal-content"></div>
+    <button id="modal-close" onclick="closeModal()">FERMER</button>
+  </div>
+</div>
+
+<!-- SETTINGS NEXTCLOUD -->
+<div id="settings-overlay" onclick="closeSettings()">
+  <div id="settings-panel" onclick="event.stopPropagation()">
+    <h2>☁️ NEXTCLOUD — SYNCHRO</h2>
+    <p class="hint">
+      Utilisez un <strong>mot de passe d'application</strong> (pas votre vrai mot de passe).<br>
+      Nextcloud → Paramètres → Sécurité → Créer un nouveau mot de passe d'application.
+    </p>
+
+    <div class="field-group">
+      <label>Serveur</label>
+      <input type="url" id="nc-url" value="https://nuage03.apps.education.fr" placeholder="https://...">
+    </div>
+    <div class="field-group">
+      <label>Identifiant</label>
+      <input type="text" id="nc-user" placeholder="votre.prenom.nom" autocomplete="username">
+    </div>
+    <div class="field-group">
+      <label>Mot de passe d'application</label>
+      <input type="password" id="nc-pass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="current-password">
+    </div>
+    <div class="field-group">
+      <label>Dossier de sauvegarde</label>
+      <input type="text" id="nc-folder" value="credit_social" placeholder="credit_social">
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn-full primary" onclick="saveSettings()">💾 ENREGISTRER</button>
+      <button class="btn-full ghost" onclick="closeSettings()">ANNULER</button>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-full primary" onclick="syncToNextcloud(true)">☁️ SYNCHRONISER</button>
+      <button class="btn-full ghost" onclick="restoreFromNextcloud()">⬇️ RESTAURER</button>
+    </div>
+
+    <div class="sync-status-line">
+      <span class="sync-indicator" id="sync-dot-modal"></span>
+      <span id="sync-status-text">Non configuré</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const STUDENTS = [
+  "BEDOUI Wassim","BENNOUAR Melina","BRUTIN Joey","CHABANE Hinde",
+  "CROQUETTE Lea","EDDAOUIBI Yousra","EL AZIZ Dounia","EL BOUAZZATI Zeyneb",
+  "FAVEEUW Corentin","FERAOUNE Lina","GLINKOWSKI Steve","IDRIS Hicham",
+  "MAKBOUL Mounir","MASNIN Thomas","OSAMA AHMED Leen","OUASSAK Nassim",
+  "OUMHAND Sanae","SACRAMENTO VAZ DA CONCEICAO Bernardo","SMAGALA Vadim",
+  "UARDA Ibtissem","ZOUNON Curtis"
+];
+
+const CRITERIA = [
+  { key: 'affaires',   icon: '📚', label: 'Affaires' },
+  { key: 'comportement', icon: '😤', label: 'Comport.' },
+  { key: 'implication', icon: '💪', label: 'Implic.' },
+  { key: 'telephone',  icon: '📱', label: 'Téléphone' },
+  { key: 'bavardages', icon: '💬', label: 'Bavard.' },
+];
+
+const POINTS_PER = 4;
+const MAX_SCORE = 20;
+
+// state: { studentName: { affaires: bool, comportement: bool, ... } }
+let currentSession = {};
+let sessions = [];
+let autoScrollTimer = null;
+let autoScrollOn = false;
+let bilanPage = 0;
+const BILAN_PAGE_SIZE = 8;
+
+// ── INIT ──
+function init() {
+  loadData();
+  renderStudents();
+  renderBilan();
+  renderHist();
+  updateBadge();
+  // set today's date as default session name
+  const today = new Date();
+  document.getElementById('seance-name').value = today.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
+}
+
+function loadData() {
+  try {
+    const s = localStorage.getItem('cs_sessions');
+    if (s) sessions = JSON.parse(s);
+    const c = localStorage.getItem('cs_current');
+    if (c) currentSession = JSON.parse(c);
+  } catch(e) { sessions = []; currentSession = {}; }
+}
+
+function saveData() {
+  localStorage.setItem('cs_sessions', JSON.stringify(sessions));
+  localStorage.setItem('cs_current', JSON.stringify(currentSession));
+}
+
+// ── RENDER STUDENTS ──
+function renderStudents() {
+  const el = document.getElementById('students-list');
+  el.innerHTML = '';
+  STUDENTS.forEach(name => {
+    const state = currentSession[name] || {};
+    let penalties = 0;
+    CRITERIA.forEach(c => { if (state[c.key]) penalties++; });
+    const score = Math.max(0, MAX_SCORE - penalties * POINTS_PER);
+    const scoreClass = score >= 16 ? 'score-20' : score >= 12 ? 'score-hi' : score >= 8 ? 'score-mid' : 'score-lo';
+
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.innerHTML = `
+      <div class="student-top">
+        <div class="student-name">${name}</div>
+        <div class="student-score ${scoreClass}" id="score-${sanitize(name)}">${score}/20</div>
+      </div>
+      <div class="criteria-row">
+        ${CRITERIA.map(c => `
+          <button class="crit-btn ${state[c.key] ? 'on' : ''}"
+            onclick="toggleCrit(this,'${name}','${c.key}')">
+            <span class="crit-icon">${c.icon}</span>
+            <span class="crit-label">${c.label}</span>
+            <span class="crit-val">-${POINTS_PER}</span>
+          </button>
+        `).join('')}
+      </div>`;
+    el.appendChild(card);
+  });
+}
+
+function sanitize(name) { return name.replace(/[^a-z0-9]/gi, '_'); }
+
+function toggleCrit(btn, name, key) {
+  if (!currentSession[name]) currentSession[name] = {};
+  currentSession[name][key] = !currentSession[name][key];
+  btn.classList.toggle('on');
+  updateStudentScore(name);
+  saveData();
+}
+
+function updateStudentScore(name) {
+  const state = currentSession[name] || {};
+  let penalties = 0;
+  CRITERIA.forEach(c => { if (state[c.key]) penalties++; });
+  const score = Math.max(0, MAX_SCORE - penalties * POINTS_PER);
+  const el = document.getElementById('score-' + sanitize(name));
+  if (!el) return;
+  el.textContent = `${score}/20`;
+  el.className = 'student-score ' + (score >= 16 ? 'score-20' : score >= 12 ? 'score-hi' : score >= 8 ? 'score-mid' : 'score-lo');
+}
+
+// ── SAVE SESSION ──
+function saveSession() {
+  const title = document.getElementById('seance-name').value.trim() || 'Séance sans titre';
+  const notesObj = {};
+  STUDENTS.forEach(name => {
+    const state = currentSession[name] || {};
+    let penalties = 0;
+    CRITERIA.forEach(c => { if (state[c.key]) penalties++; });
+    notesObj[name] = Math.max(0, MAX_SCORE - penalties * POINTS_PER);
+  });
+
+  const session = {
+    id: Date.now(),
+    title,
+    date: new Date().toISOString(),
+    notes: notesObj,
+    details: JSON.parse(JSON.stringify(currentSession))
+  };
+
+  sessions.unshift(session);
+  currentSession = {};
+  saveData();
+  renderStudents();
+  renderBilan();
+  renderHist();
+  updateBadge();
+
+  // auto-name next session
+  const today = new Date();
+  document.getElementById('seance-name').value = today.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
+
+  showToast(`"${title}" sauvegardée ✓`);
+  syncToNextcloud(false); // synchro auto silencieuse
+}
+
+// ── NEXTCLOUD / WebDAV ──
+function getNcConfig() {
+  return {
+    url:    localStorage.getItem('nc_url')    || '',
+    user:   localStorage.getItem('nc_user')   || '',
+    pass:   localStorage.getItem('nc_pass')   || '',
+    folder: localStorage.getItem('nc_folder') || 'credit_social',
+  };
+}
+
+function webdavUrl(cfg) {
+  const base = cfg.url.replace(/\/$/, '');
+  return `${base}/remote.php/dav/files/${encodeURIComponent(cfg.user)}/${cfg.folder}/credit_social.json`;
+}
+
+function setSyncStatus(state, msg) {
+  ['sync-dot','sync-dot-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'sync-indicator' + (state ? ` ${state}` : '');
+  });
+  const txt = document.getElementById('sync-status-text');
+  if (txt) txt.textContent = msg || '';
+}
+
+async function ensureFolder(cfg) {
+  // Crée le dossier via MKCOL si besoin (ignore 405 = déjà existant)
+  const base = cfg.url.replace(/\/$/, '');
+  const folderUrl = `${base}/remote.php/dav/files/${encodeURIComponent(cfg.user)}/${cfg.folder}/`;
+  const auth = btoa(`${cfg.user}:${cfg.pass}`);
+  try {
+    await fetch(folderUrl, {
+      method: 'MKCOL',
+      headers: { 'Authorization': `Basic ${auth}` }
+    });
+  } catch(e) { /* ignore */ }
+}
+
+async function syncToNextcloud(manual = false) {
+  const cfg = getNcConfig();
+  if (!cfg.url || !cfg.user || !cfg.pass) {
+    if (manual) showToast('⚙️ Configurez Nextcloud d\'abord');
+    return;
+  }
+  setSyncStatus('busy', 'Synchronisation…');
+  try {
+    await ensureFolder(cfg);
+    const auth = btoa(`${cfg.user}:${cfg.pass}`);
+    const payload = JSON.stringify({ sessions, exportedAt: new Date().toISOString() });
+    const res = await fetch(webdavUrl(cfg), {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: payload
+    });
+    if (res.ok || res.status === 201 || res.status === 204) {
+      const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      setSyncStatus('ok', `Synchronisé à ${now}`);
+      localStorage.setItem('nc_last_sync', new Date().toISOString());
+      if (manual) showToast('☁️ Synchronisé sur Nextcloud ✓');
+    } else {
+      setSyncStatus('err', `Erreur ${res.status}`);
+      if (manual) showToast(`❌ Erreur sync: ${res.status}`);
+    }
+  } catch(e) {
+    setSyncStatus('err', 'Erreur réseau');
+    if (manual) showToast('❌ Erreur réseau — vérifiez la connexion');
+  }
+}
+
+async function restoreFromNextcloud() {
+  const cfg = getNcConfig();
+  if (!cfg.url || !cfg.user || !cfg.pass) { showToast('⚙️ Configurez Nextcloud d\'abord'); return; }
+  setSyncStatus('busy', 'Restauration…');
+  try {
+    const auth = btoa(`${cfg.user}:${cfg.pass}`);
+    const res = await fetch(webdavUrl(cfg), {
+      method: 'GET',
+      headers: { 'Authorization': `Basic ${auth}` }
+    });
+    if (!res.ok) { setSyncStatus('err', `Erreur ${res.status}`); showToast(`❌ Erreur: ${res.status}`); return; }
+    const data = await res.json();
+    if (data.sessions && Array.isArray(data.sessions)) {
+      sessions = data.sessions;
+      saveData();
+      renderStudents(); renderBilan(); renderHist(); updateBadge();
+      setSyncStatus('ok', `Restauré (${sessions.length} séances)`);
+      showToast(`☁️ ${sessions.length} séances restaurées ✓`);
+      closeSettings();
+    } else {
+      setSyncStatus('err', 'Format invalide');
+      showToast('❌ Fichier Nextcloud invalide');
+    }
+  } catch(e) {
+    setSyncStatus('err', 'Erreur réseau');
+    showToast('❌ Erreur réseau');
+  }
+}
+
+// ── SETTINGS UI ──
+function openSettings() {
+  const cfg = getNcConfig();
+  document.getElementById('nc-url').value    = cfg.url    || 'https://nuage03.apps.education.fr';
+  document.getElementById('nc-user').value   = cfg.user   || '';
+  document.getElementById('nc-pass').value   = cfg.pass   || '';
+  document.getElementById('nc-folder').value = cfg.folder || 'credit_social';
+  const last = localStorage.getItem('nc_last_sync');
+  const dot  = document.getElementById('sync-dot');
+  const dotClass = dot ? dot.className.replace('sync-indicator','').trim() : '';
+  const txt = document.getElementById('sync-status-text');
+  if (last && txt) {
+    const d = new Date(last);
+    txt.textContent = `Dernière sync : ${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+    document.getElementById('sync-dot-modal').className = 'sync-indicator ' + dotClass;
+  } else if (txt) {
+    txt.textContent = cfg.user ? 'Configuré, non synchronisé' : 'Non configuré';
+  }
+  document.getElementById('settings-overlay').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('show');
+}
+
+function saveSettings() {
+  const url    = document.getElementById('nc-url').value.trim();
+  const user   = document.getElementById('nc-user').value.trim();
+  const pass   = document.getElementById('nc-pass').value;
+  const folder = document.getElementById('nc-folder').value.trim() || 'credit_social';
+
+  if (!url || !user || !pass) {
+    showToast('⚠️ Remplissez tous les champs');
+    return;
+  }
+
+  localStorage.setItem('nc_url',    url);
+  localStorage.setItem('nc_user',   user);
+  localStorage.setItem('nc_pass',   pass);
+  localStorage.setItem('nc_folder', folder);
+
+  closeSettings();
+  showToast('✅ Paramètres enregistrés !');
+}
+
+// ── BILAN ──
+function computeAverages() {
+  const totals = {};
+  const counts = {};
+  STUDENTS.forEach(n => { totals[n] = 0; counts[n] = 0; });
+  sessions.forEach(s => {
+    STUDENTS.forEach(n => {
+      if (s.notes && s.notes[n] !== undefined) {
+        totals[n] += s.notes[n];
+        counts[n]++;
+      }
+    });
+  });
+  return STUDENTS.map(name => ({
+    name,
+    avg: counts[name] > 0 ? Math.round((totals[name] / counts[name]) * 10) / 10 : null,
+    sessions: counts[name]
+  })).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+}
+
+function scoreColor(v) {
+  if (v === null) return 'var(--text-muted)';
+  if (v <= 5) return 'var(--red)';
+  if (v <= 10) return 'var(--orange)';
+  if (v <= 15) return 'var(--green)';
+  return 'var(--green-dark)';
+}
+
+function renderBilan() {
+  const el = document.getElementById('bilan-list');
+  const avgs = computeAverages();
+  const sessionCount = sessions.length;
+
+  document.getElementById('bilan-session-count').textContent =
+    sessionCount === 0 ? 'Aucune séance' :
+    sessionCount === 1 ? '1 séance' : `${sessionCount} séances`;
+
+  // ── MOYENNE GLOBALE ──
+  const moyBar = document.getElementById('moyenne-globale-bar');
+  const moyVal = document.getElementById('moyenne-globale-val');
+  if (sessionCount === 0) {
+    moyBar.style.display = 'none';
+    el.innerHTML = '<div class="hist-empty"><div class="big">📊</div>Aucune séance enregistrée.<br>Complétez une séance puis sauvegardez.</div>';
+    return;
+  }
+
+  const avgsWithData = avgs.filter(s => s.avg !== null);
+  const moyenneGlobale = avgsWithData.length > 0
+    ? Math.round(avgsWithData.reduce((sum, s) => sum + s.avg, 0) / avgsWithData.length * 10) / 10
+    : null;
+
+  moyBar.style.display = 'flex';
+  moyVal.textContent = moyenneGlobale !== null ? `${moyenneGlobale} / 20` : '–';
+  moyVal.style.color = moyenneGlobale !== null ? scoreColor(moyenneGlobale) : 'var(--text-muted)';
+
+  el.innerHTML = '';
+  avgs.forEach((s, i) => {
+    const color = scoreColor(s.avg);
+    const pct = s.avg !== null ? (s.avg / 20 * 100).toFixed(1) : 0;
+    const row = document.createElement('div');
+    row.className = 'bilan-row';
+    row.dataset.idx = i;
+    row.innerHTML = `
+      <span class="bilan-rank">${i+1}</span>
+      <span class="bilan-name">${s.name}</span>
+      <div class="bilan-bar-wrap">
+        <div class="bilan-bar-bg">
+          <div class="bilan-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>
+      <span class="bilan-score" style="color:${color}">${s.avg !== null ? s.avg : '–'}</span>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// ── AUTO SCROLL BILAN ──
+function toggleAutoScroll() {
+  const btn = document.getElementById('scroll-btn');
+  if (autoScrollOn) {
+    clearInterval(autoScrollTimer);
+    autoScrollOn = false;
+    btn.classList.remove('on');
+    btn.innerHTML = '<span class="scroll-dot"></span> AUTO';
+  } else {
+    autoScrollOn = true;
+    btn.classList.add('on');
+    btn.innerHTML = '<span class="scroll-dot"></span> STOP';
+    scrollBilan();
+    autoScrollTimer = setInterval(scrollBilan, 3000);
+  }
+}
+
+function scrollBilan() {
+  const content = document.getElementById('content');
+  const el = document.getElementById('bilan-list');
+  const rows = el.querySelectorAll('.bilan-row');
+  if (!rows.length) return;
+  const total = rows.length;
+  const rowH = rows[0].offsetHeight || 48;
+  const visible = Math.floor(content.clientHeight / rowH);
+  const maxPage = Math.ceil(total / visible);
+
+  bilanPage = (bilanPage + 1) % maxPage;
+  const scrollTarget = document.getElementById('bilan-list').offsetTop - 120 + bilanPage * visible * rowH;
+  content.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+  if (bilanPage === 0) content.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── EXPORT CSV ──
+function exportBilanCSV() {
+  const avgs = computeAverages();
+  let csv = '\uFEFFNom;Note/20\r\n';
+  avgs.forEach(s => {
+    csv += `"${s.name}";${s.avg !== null ? s.avg : ''}\r\n`;
+  });
+  downloadFile(csv, 'bilan_credit_social.csv', 'text/csv;charset=utf-8');
+  showToast('CSV téléchargé ✓');
+}
+
+function exportSessionCSV(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  let csv = '\uFEFFNom;Note/20\r\n';
+  STUDENTS.forEach(name => {
+    const note = s.notes[name] !== undefined ? s.notes[name] : '';
+    csv += `"${name}";${note}\r\n`;
+  });
+  const fname = s.title.replace(/[^a-z0-9éèàêîù ]/gi,'_') + '.csv';
+  downloadFile(csv, fname, 'text/csv;charset=utf-8');
+  showToast('CSV téléchargé ✓');
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ── HISTORIQUE ──
+function renderHist() {
+  const el = document.getElementById('hist-list');
+  if (sessions.length === 0) {
+    el.innerHTML = '<div class="hist-empty"><div class="big">🗂️</div>Aucune séance enregistrée.<br>Les séances sauvegardées apparaîtront ici.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  sessions.forEach(s => {
+    const d = new Date(s.date);
+    const dateStr = d.toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}) + ' ' +
+                    d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    const avg = STUDENTS.length > 0 ?
+      (Object.values(s.notes).reduce((a,b) => a+b, 0) / STUDENTS.length).toFixed(1) : '–';
+    const nbSanctions = Object.values(s.notes).filter(n => n < 20).length;
+
+    const card = document.createElement('div');
+    card.className = 'session-card';
+    card.innerHTML = `
+      <div class="session-card-header">
+        <div class="session-title">${s.title}</div>
+        <div class="session-date">${dateStr}</div>
+      </div>
+      <div class="session-stats">
+        <span>📊 Moy. ${avg}/20</span>
+        <span>⚠️ ${nbSanctions} sanctionné(s)</span>
+        <span>👥 ${STUDENTS.length} élèves</span>
+      </div>
+      <div class="session-actions">
+        <button class="btn-sm primary" onclick="viewSession(${s.id})">👁 Détail</button>
+        <button class="btn-sm primary" onclick="exportSessionCSV(${s.id})">📥 CSV</button>
+        <button class="btn-sm danger" onclick="deleteSession(${s.id})">🗑 Suppr.</button>
+      </div>`;
+    el.appendChild(card);
+  });
+}
+
+function viewSession(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  let html = `<div style="display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:0.82rem">`;
+  STUDENTS.forEach(name => {
+    const note = s.notes[name] !== undefined ? s.notes[name] : '–';
+    const color = note !== '–' ? scoreColor(note) : 'var(--text-muted)';
+    html += `<span>${name}</span><span style="font-family:var(--mono);color:${color};font-weight:700">${note}/20</span>`;
+  });
+  html += '</div>';
+  showModal(s.title, html);
+}
+
+function deleteSession(id) {
+  if (!confirm('Supprimer cette séance ?')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  saveData();
+  renderHist();
+  renderBilan();
+  updateBadge();
+  showToast('Séance supprimée');
+  syncToNextcloud(false);
+}
+
+// ── NAVIGATION ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  document.getElementById('content').scrollTop = 0;
+  bilanPage = 0;
+
+  if (name === 'bilan') renderBilan();
+  if (name === 'hist') renderHist();
+
+  if (name !== 'bilan' && autoScrollOn) toggleAutoScroll();
+}
+
+function updateBadge() {
+  document.getElementById('header-badge').textContent = sessions.length + ' SÉANCE' + (sessions.length !== 1 ? 'S' : '');
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── MODAL ──
+function showModal(title, content) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-content').innerHTML = content;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ── START ──
+init();
+// Afficher statut sync au démarrage
+const _last = localStorage.getItem('nc_last_sync');
+const _cfg  = getNcConfig();
+if (_cfg.user && _last) {
+  const _d = new Date(_last);
+  setSyncStatus('ok', `Dernière sync : ${_d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`);
+} else if (_cfg.user) {
+  setSyncStatus('', 'Configuré');
+}
+</script>
+</body>
+</html>
