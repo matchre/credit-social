@@ -1265,6 +1265,10 @@ if (_cfg.owner && _last) {
 } else if (_cfg.owner) {
   setSyncStatus('', 'Configuré');
 }
+// Restauration automatique au chargement si GitHub configuré
+if (_cfg.owner && _cfg.repo && _cfg.token) {
+  githubLoad(false);
+}
 </script>
 </body>
 </html>
