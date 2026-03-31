@@ -734,8 +734,11 @@ function saveSession() {
 
 // ── GITHUB SYNC ──
 function getGhConfig() {
+  let owner = localStorage.getItem('gh_owner') || '';
+  // Nettoyer au cas où l'URL complète aurait été sauvegardée
+  owner = owner.replace(/https?:\/\/github\.com\//i, '').replace(/\//g, '').trim();
   return {
-    owner: localStorage.getItem('gh_owner') || '',
+    owner,
     repo:  localStorage.getItem('gh_repo')  || '',
     token: localStorage.getItem('gh_token') || '',
     path:  'data.json',
@@ -844,7 +847,9 @@ async function githubSave(manual = false) {
       const fileData = await getRes.json();
       sha = fileData.sha;
     }
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify({ sessions, exportedAt: new Date().toISOString() }, null, 2))));
+    const json = JSON.stringify({ sessions, exportedAt: new Date().toISOString() }, null, 2);
+    const encoded = new TextEncoder().encode(json);
+    const content = btoa(String.fromCharCode(...encoded));
     const body = { message: `sync ${new Date().toLocaleString('fr-FR')}`, content };
     if (sha) body.sha = sha;
 
@@ -871,40 +876,86 @@ async function githubSave(manual = false) {
 
 async function githubLoad(manual = false) {
   const cfg = getGhConfig();
+  const log = document.getElementById('diag-log');
+  if (manual) { log.style.display = 'block'; log.textContent = ''; }
+  const addLog = line => { if (manual) log.textContent += line + '\n'; };
+
   if (!cfg.owner || !cfg.repo || !cfg.token) {
+    addLog('❌ Paramètres manquants');
     if (manual) showToast('⚙️ Configurez GitHub d\'abord');
     return;
   }
+
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+  addLog('URL: ' + url);
+  addLog('');
   setSyncStatus('busy', 'Restauration…');
+
   try {
-    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' }
     });
-    if (!res.ok) {
-      setSyncStatus('err', `Erreur ${res.status}`);
-      if (manual) showToast(`❌ Erreur ${res.status} — fichier introuvable ?`);
+    addLog('→ HTTP ' + res.status);
+
+    if (res.status === 404) {
+      addLog('❌ Fichier data.json introuvable.');
+      addLog('→ Faites d\'abord une SYNC pour créer le fichier.');
+      setSyncStatus('err', 'data.json absent');
+      if (manual) showToast('❌ Faites d\'abord une SYNC pour créer le fichier', 5000);
       return;
     }
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      addLog('❌ Erreur HTTP ' + res.status);
+      addLog(txt.slice(0, 200));
+      setSyncStatus('err', `Erreur ${res.status}`);
+      return;
+    }
+
     const fileData = await res.json();
-    const decoded = JSON.parse(decodeURIComponent(escape(atob(fileData.content))));
+    addLog('✅ Fichier trouvé, décodage…');
+    addLog('   content présent: ' + !!fileData.content);
+    addLog('   content (50 cars): ' + String(fileData.content).slice(0,50));
+    const clean = fileData.content.replace(/\s/g, '');
+    addLog('   après nettoyage (50): ' + clean.slice(0,50));
+    let decoded;
+    try {
+      const bytes = Uint8Array.from(atob(clean), c => c.charCodeAt(0));
+      addLog('   bytes OK, longueur: ' + bytes.length);
+      const text = new TextDecoder().decode(bytes);
+      addLog('   texte (80 cars): ' + text.slice(0,80));
+      decoded = JSON.parse(text);
+      addLog('   JSON parsé OK');
+    } catch(de) {
+      addLog('   ❌ Erreur décodage: ' + de.message);
+      setSyncStatus('err', 'Erreur décodage');
+      return;
+    }
     if (decoded.sessions && Array.isArray(decoded.sessions)) {
       sessions = decoded.sessions;
-      saveData();
-      renderStudents(); renderBilan(); renderHist(); updateBadge();
+      addLog('   ' + sessions.length + ' séances chargées');
+      try { saveData(); addLog('   saveData OK'); } catch(e) { addLog('   ❌ saveData: '+e.message); }
+      try { renderStudents(); addLog('   renderStudents OK'); } catch(e) { addLog('   ❌ renderStudents: '+e.message); }
+      try { renderBilan(); addLog('   renderBilan OK'); } catch(e) { addLog('   ❌ renderBilan: '+e.message); }
+      try { renderHist(); addLog('   renderHist OK'); } catch(e) { addLog('   ❌ renderHist: '+e.message); }
+      try { updateBadge(); addLog('   updateBadge OK'); } catch(e) { addLog('   ❌ updateBadge: '+e.message); }
       const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      addLog('✅ ' + sessions.length + ' séances restaurées à ' + now);
       setSyncStatus('ok', `Restauré à ${now} (${sessions.length} séances)`);
       if (manual) {
         showToast(`☁️ ${sessions.length} séances restaurées ✓`);
         closeSettings();
       }
     } else {
+      addLog('❌ Format JSON invalide');
       setSyncStatus('err', 'Format invalide');
       if (manual) showToast('❌ Fichier GitHub invalide');
     }
   } catch(e) {
+    addLog('❌ Erreur: ' + e.message);
+    addLog('→ URL construite: ' + url);
     setSyncStatus('err', 'Erreur réseau');
-    if (manual) showToast('❌ Erreur réseau');
+    if (manual) showToast('❌ ' + e.message, 6000);
   }
 }
 
@@ -1111,9 +1162,10 @@ function renderHist() {
     const d = new Date(s.date);
     const dateStr = d.toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}) + ' ' +
                     d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-    const avg = STUDENTS.length > 0 ?
-      (Object.values(s.notes).reduce((a,b) => a+b, 0) / STUDENTS.length).toFixed(1) : '–';
-    const nbSanctions = Object.values(s.notes).filter(n => n < 20).length;
+    const notes = s.notes || {};
+    const vals = Object.values(notes);
+    const avg = vals.length > 0 ? (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(1) : '–';
+    const nbSanctions = vals.filter(n => n < 20).length;
 
     const card = document.createElement('div');
     card.className = 'session-card';
