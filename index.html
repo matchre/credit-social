@@ -735,8 +735,11 @@ function saveSession() {
 // ── GITHUB SYNC ──
 function getGhConfig() {
   let owner = localStorage.getItem('gh_owner') || '';
-  // Nettoyer au cas où l'URL complète aurait été sauvegardée
-  owner = owner.replace(/https?:\/\/github\.com\//i, '').replace(/\//g, '').trim();
+  // Nettoyer : extraire juste le pseudo quelle que soit la forme collée
+  // ex: https://github.com/matchre/ → matchre
+  // ex: github.com/matchre → matchre
+  // ex: matchre/ → matchre
+  owner = owner.replace(/^https?:\/\//i, '').replace(/^github\.com\//i, '').replace(/\//g, '').trim();
   return {
     owner,
     repo:  localStorage.getItem('gh_repo')  || '',
@@ -986,7 +989,7 @@ function closeSettings() {
 function saveSettings() {
   // Nettoyer l'owner : extraire juste le pseudo même si l'URL complète est collée
   let owner = document.getElementById('gh-owner').value.trim();
-  owner = owner.replace(/https?:\/\/github\.com\//i, '').replace(/\//g, '').trim();
+  owner = owner.replace(/^https?:\/\//i, '').replace(/^github\.com\//i, '').replace(/\//g, '').trim();
 
   const repo  = document.getElementById('gh-repo').value.trim().replace(/\//g, '');
   const token = document.getElementById('gh-token').value.trim();
