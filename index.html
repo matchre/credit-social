@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -475,7 +476,7 @@
         <button class="btn-scroll" id="scroll-btn" onclick="toggleAutoScroll()">
           <span class="scroll-dot"></span> AUTO
         </button>
-        <button class="btn-sm primary" onclick="syncToNextcloud(true)">☁️ SYNC</button>
+        <button class="btn-sm primary" onclick="githubSave(true)">☁️ SYNC</button>
         <button class="btn-sm primary" onclick="exportBilanCSV()">📥 CSV</button>
       </div>
       <div id="moyenne-globale-bar" style="display:none;
@@ -538,30 +539,27 @@
   </div>
 </div>
 
-<!-- SETTINGS NEXTCLOUD -->
+<!-- SETTINGS GITHUB -->
 <div id="settings-overlay" onclick="closeSettings()">
   <div id="settings-panel" onclick="event.stopPropagation()">
-    <h2>☁️ NEXTCLOUD — SYNCHRO</h2>
+    <h2>☁️ GITHUB — SYNCHRO</h2>
     <p class="hint">
-      Utilisez un <strong>mot de passe d'application</strong> (pas votre vrai mot de passe).<br>
-      Nextcloud → Paramètres → Sécurité → Créer un nouveau mot de passe d'application.
+      Créez un <strong>token d'accès personnel</strong> sur GitHub :<br>
+      github.com → Settings → Developer settings → Personal access tokens → Fine-grained<br>
+      Permission requise : <strong>Contents → Read and Write</strong>
     </p>
 
     <div class="field-group">
-      <label>Serveur</label>
-      <input type="url" id="nc-url" value="https://nuage03.apps.education.fr" placeholder="https://...">
+      <label>Propriétaire (owner)</label>
+      <input type="text" id="gh-owner" placeholder="votre-pseudo-github" autocomplete="off">
     </div>
     <div class="field-group">
-      <label>Identifiant</label>
-      <input type="text" id="nc-user" placeholder="votre.prenom.nom" autocomplete="username">
+      <label>Nom du dépôt (repo)</label>
+      <input type="text" id="gh-repo" placeholder="credit-social" autocomplete="off">
     </div>
     <div class="field-group">
-      <label>Mot de passe d'application</label>
-      <input type="password" id="nc-pass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="current-password">
-    </div>
-    <div class="field-group">
-      <label>Dossier de sauvegarde</label>
-      <input type="text" id="nc-folder" value="credit_social" placeholder="credit_social">
+      <label>Token GitHub</label>
+      <input type="password" id="gh-token" placeholder="github_pat_..." autocomplete="off">
     </div>
 
     <div class="settings-actions">
@@ -569,8 +567,8 @@
       <button class="btn-full ghost" onclick="closeSettings()">ANNULER</button>
     </div>
     <div class="settings-actions">
-      <button class="btn-full primary" onclick="syncToNextcloud(true)">☁️ SYNCHRONISER</button>
-      <button class="btn-full ghost" onclick="restoreFromNextcloud()">⬇️ RESTAURER</button>
+      <button class="btn-full primary" onclick="githubSave(true)">☁️ SYNCHRONISER</button>
+      <button class="btn-full ghost" onclick="githubLoad(true)">⬇️ RESTAURER</button>
     </div>
 
     <div class="sync-status-line">
@@ -721,22 +719,17 @@ function saveSession() {
   document.getElementById('seance-name').value = today.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
 
   showToast(`"${title}" sauvegardée ✓`);
-  syncToNextcloud(false); // synchro auto silencieuse
+  githubSave(false); // synchro auto silencieuse
 }
 
-// ── NEXTCLOUD / WebDAV ──
-function getNcConfig() {
+// ── GITHUB SYNC ──
+function getGhConfig() {
   return {
-    url:    localStorage.getItem('nc_url')    || '',
-    user:   localStorage.getItem('nc_user')   || '',
-    pass:   localStorage.getItem('nc_pass')   || '',
-    folder: localStorage.getItem('nc_folder') || 'credit_social',
+    owner: localStorage.getItem('gh_owner') || '',
+    repo:  localStorage.getItem('gh_repo')  || '',
+    token: localStorage.getItem('gh_token') || '',
+    path:  'data.json',
   };
-}
-
-function webdavUrl(cfg) {
-  const base = cfg.url.replace(/\/$/, '');
-  return `${base}/remote.php/dav/files/${encodeURIComponent(cfg.user)}/${cfg.folder}/credit_social.json`;
 }
 
 function setSyncStatus(state, msg) {
@@ -749,46 +742,42 @@ function setSyncStatus(state, msg) {
   if (txt) txt.textContent = msg || '';
 }
 
-async function ensureFolder(cfg) {
-  // Crée le dossier via MKCOL si besoin (ignore 405 = déjà existant)
-  const base = cfg.url.replace(/\/$/, '');
-  const folderUrl = `${base}/remote.php/dav/files/${encodeURIComponent(cfg.user)}/${cfg.folder}/`;
-  const auth = btoa(`${cfg.user}:${cfg.pass}`);
-  try {
-    await fetch(folderUrl, {
-      method: 'MKCOL',
-      headers: { 'Authorization': `Basic ${auth}` }
-    });
-  } catch(e) { /* ignore */ }
-}
-
-async function syncToNextcloud(manual = false) {
-  const cfg = getNcConfig();
-  if (!cfg.url || !cfg.user || !cfg.pass) {
-    if (manual) showToast('⚙️ Configurez Nextcloud d\'abord');
+async function githubSave(manual = false) {
+  const cfg = getGhConfig();
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    if (manual) showToast('⚙️ Configurez GitHub d\'abord');
     return;
   }
   setSyncStatus('busy', 'Synchronisation…');
   try {
-    await ensureFolder(cfg);
-    const auth = btoa(`${cfg.user}:${cfg.pass}`);
-    const payload = JSON.stringify({ sessions, exportedAt: new Date().toISOString() });
-    const res = await fetch(webdavUrl(cfg), {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-      body: payload
+    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+    // Récupérer le SHA actuel si le fichier existe
+    let sha = null;
+    const getRes = await fetch(url, {
+      headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' }
     });
-    if (res.ok || res.status === 201 || res.status === 204) {
+    if (getRes.ok) {
+      const fileData = await getRes.json();
+      sha = fileData.sha;
+    }
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify({ sessions, exportedAt: new Date().toISOString() }, null, 2))));
+    const body = { message: `sync ${new Date().toLocaleString('fr-FR')}`, content };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
       const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
       setSyncStatus('ok', `Synchronisé à ${now}`);
-      localStorage.setItem('nc_last_sync', new Date().toISOString());
-      if (manual) showToast('☁️ Synchronisé sur Nextcloud ✓');
+      localStorage.setItem('gh_last_sync', new Date().toISOString());
+      if (manual) showToast('☁️ Synchronisé sur GitHub ✓');
     } else {
+      const err = await res.json().catch(() => ({}));
       setSyncStatus('err', `Erreur ${res.status}`);
-      if (manual) showToast(`❌ Erreur sync: ${res.status}`);
+      if (manual) showToast(`❌ Erreur ${res.status}: ${err.message || ''}`);
     }
   } catch(e) {
     setSyncStatus('err', 'Erreur réseau');
@@ -796,43 +785,52 @@ async function syncToNextcloud(manual = false) {
   }
 }
 
-async function restoreFromNextcloud() {
-  const cfg = getNcConfig();
-  if (!cfg.url || !cfg.user || !cfg.pass) { showToast('⚙️ Configurez Nextcloud d\'abord'); return; }
+async function githubLoad(manual = false) {
+  const cfg = getGhConfig();
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    if (manual) showToast('⚙️ Configurez GitHub d\'abord');
+    return;
+  }
   setSyncStatus('busy', 'Restauration…');
   try {
-    const auth = btoa(`${cfg.user}:${cfg.pass}`);
-    const res = await fetch(webdavUrl(cfg), {
-      method: 'GET',
-      headers: { 'Authorization': `Basic ${auth}` }
+    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' }
     });
-    if (!res.ok) { setSyncStatus('err', `Erreur ${res.status}`); showToast(`❌ Erreur: ${res.status}`); return; }
-    const data = await res.json();
-    if (data.sessions && Array.isArray(data.sessions)) {
-      sessions = data.sessions;
+    if (!res.ok) {
+      setSyncStatus('err', `Erreur ${res.status}`);
+      if (manual) showToast(`❌ Erreur ${res.status} — fichier introuvable ?`);
+      return;
+    }
+    const fileData = await res.json();
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(fileData.content))));
+    if (decoded.sessions && Array.isArray(decoded.sessions)) {
+      sessions = decoded.sessions;
       saveData();
       renderStudents(); renderBilan(); renderHist(); updateBadge();
-      setSyncStatus('ok', `Restauré (${sessions.length} séances)`);
-      showToast(`☁️ ${sessions.length} séances restaurées ✓`);
-      closeSettings();
+      const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      setSyncStatus('ok', `Restauré à ${now} (${sessions.length} séances)`);
+      if (manual) {
+        showToast(`☁️ ${sessions.length} séances restaurées ✓`);
+        closeSettings();
+      }
     } else {
       setSyncStatus('err', 'Format invalide');
-      showToast('❌ Fichier Nextcloud invalide');
+      if (manual) showToast('❌ Fichier GitHub invalide');
     }
   } catch(e) {
     setSyncStatus('err', 'Erreur réseau');
-    showToast('❌ Erreur réseau');
+    if (manual) showToast('❌ Erreur réseau');
   }
 }
 
 // ── SETTINGS UI ──
 function openSettings() {
-  const cfg = getNcConfig();
-  document.getElementById('nc-url').value    = cfg.url    || 'https://nuage03.apps.education.fr';
-  document.getElementById('nc-user').value   = cfg.user   || '';
-  document.getElementById('nc-pass').value   = cfg.pass   || '';
-  document.getElementById('nc-folder').value = cfg.folder || 'credit_social';
-  const last = localStorage.getItem('nc_last_sync');
+  const cfg = getGhConfig();
+  document.getElementById('gh-owner').value = cfg.owner || '';
+  document.getElementById('gh-repo').value  = cfg.repo  || '';
+  document.getElementById('gh-token').value = cfg.token || '';
+  const last = localStorage.getItem('gh_last_sync');
   const dot  = document.getElementById('sync-dot');
   const dotClass = dot ? dot.className.replace('sync-indicator','').trim() : '';
   const txt = document.getElementById('sync-status-text');
@@ -841,7 +839,7 @@ function openSettings() {
     txt.textContent = `Dernière sync : ${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
     document.getElementById('sync-dot-modal').className = 'sync-indicator ' + dotClass;
   } else if (txt) {
-    txt.textContent = cfg.user ? 'Configuré, non synchronisé' : 'Non configuré';
+    txt.textContent = cfg.owner ? 'Configuré, non synchronisé' : 'Non configuré';
   }
   document.getElementById('settings-overlay').classList.add('show');
 }
@@ -851,20 +849,17 @@ function closeSettings() {
 }
 
 function saveSettings() {
-  const url    = document.getElementById('nc-url').value.trim();
-  const user   = document.getElementById('nc-user').value.trim();
-  const pass   = document.getElementById('nc-pass').value;
-  const folder = document.getElementById('nc-folder').value.trim() || 'credit_social';
+  const owner = document.getElementById('gh-owner').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  const token = document.getElementById('gh-token').value.trim();
 
-  if (!url || !user || !pass) {
+  if (!owner || !repo || !token) {
     showToast('⚠️ Remplissez tous les champs');
     return;
   }
-
-  localStorage.setItem('nc_url',    url);
-  localStorage.setItem('nc_user',   user);
-  localStorage.setItem('nc_pass',   pass);
-  localStorage.setItem('nc_folder', folder);
+  localStorage.setItem('gh_owner', owner);
+  localStorage.setItem('gh_repo',  repo);
+  localStorage.setItem('gh_token', token);
 
   closeSettings();
   showToast('✅ Paramètres enregistrés !');
@@ -1071,7 +1066,7 @@ function deleteSession(id) {
   renderBilan();
   updateBadge();
   showToast('Séance supprimée');
-  syncToNextcloud(false);
+  githubSave(false);
 }
 
 // ── NAVIGATION ──
@@ -1116,12 +1111,12 @@ function closeModal() {
 // ── START ──
 init();
 // Afficher statut sync au démarrage
-const _last = localStorage.getItem('nc_last_sync');
-const _cfg  = getNcConfig();
-if (_cfg.user && _last) {
+const _last = localStorage.getItem('gh_last_sync');
+const _cfg  = getGhConfig();
+if (_cfg.owner && _last) {
   const _d = new Date(_last);
   setSyncStatus('ok', `Dernière sync : ${_d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`);
-} else if (_cfg.user) {
+} else if (_cfg.owner) {
   setSyncStatus('', 'Configuré');
 }
 </script>
