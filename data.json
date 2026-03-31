@@ -30,40 +30,6 @@
       "details": {}
     },
     {
-      "id": 1774865433982,
-      "title": "lundi 30 mars",
-      "date": "2026-03-30T10:10:33.982Z",
-      "notes": {
-        "BEDOUI Wassim": 12,
-        "BENNOUAR Melina": 20,
-        "BRUTIN Joey": 20,
-        "CHABANE Hinde": 20,
-        "CROQUETTE Lea": 20,
-        "EDDAOUIBI Yousra": 20,
-        "EL AZIZ Dounia": 20,
-        "EL BOUAZZATI Zeyneb": 20,
-        "FAVEEUW Corentin": 20,
-        "FERAOUNE Lina": 20,
-        "GLINKOWSKI Steve": 20,
-        "IDRIS Hicham": 20,
-        "MAKBOUL Mounir": 20,
-        "MASNIN Thomas": 20,
-        "OSAMA AHMED Leen": 20,
-        "OUASSAK Nassim": 20,
-        "OUMHAND Sanae": 20,
-        "SACRAMENTO VAZ DA CONCEICAO Bernardo": 20,
-        "SMAGALA Vadim": 20,
-        "UARDA Ibtissem": 20,
-        "ZOUNON Curtis": 20
-      },
-      "details": {
-        "BEDOUI Wassim": {
-          "bavardages": true,
-          "telephone": true
-        }
-      }
-    },
-    {
       "date": "2026-03-30T12:18:46.214Z",
       "value": 2
     },
@@ -80,5 +46,5 @@
       "value": 13
     }
   ],
-  "exportedAt": "2026-03-31T07:15:15.402Z"
+  "exportedAt": "2026-03-31T07:15:17.331Z"
 }
