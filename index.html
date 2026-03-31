@@ -729,7 +729,7 @@ function saveSession() {
   document.getElementById('seance-name').value = today.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'});
 
   showToast(`"${title}" sauvegardée ✓`);
-  githubSave(false); // synchro auto silencieuse
+  githubSave(true); // synchro auto avec confirmation
 }
 
 // ── GITHUB SYNC ──
