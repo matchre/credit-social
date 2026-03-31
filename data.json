@@ -1,35 +1,6 @@
 {
   "sessions": [
     {
-      "id": 1774942671131,
-      "title": "mardi 31 marswwwww",
-      "date": "2026-03-31T07:37:51.131Z",
-      "notes": {
-        "BEDOUI Wassim": 20,
-        "BENNOUAR Melina": 20,
-        "BRUTIN Joey": 20,
-        "CHABANE Hinde": 20,
-        "CROQUETTE Lea": 20,
-        "EDDAOUIBI Yousra": 20,
-        "EL AZIZ Dounia": 20,
-        "EL BOUAZZATI Zeyneb": 20,
-        "FAVEEUW Corentin": 20,
-        "FERAOUNE Lina": 20,
-        "GLINKOWSKI Steve": 20,
-        "IDRIS Hicham": 20,
-        "MAKBOUL Mounir": 20,
-        "MASNIN Thomas": 20,
-        "OSAMA AHMED Leen": 20,
-        "OUASSAK Nassim": 20,
-        "OUMHAND Sanae": 20,
-        "SACRAMENTO VAZ DA CONCEICAO Bernardo": 20,
-        "SMAGALA Vadim": 20,
-        "UARDA Ibtissem": 20,
-        "ZOUNON Curtis": 20
-      },
-      "details": {}
-    },
-    {
       "id": 1774942221823,
       "title": "mardi 31 marszzzz",
       "date": "2026-03-31T07:30:21.823Z",
@@ -146,5 +117,5 @@
       "details": {}
     }
   ],
-  "exportedAt": "2026-03-31T07:37:51.157Z"
+  "exportedAt": "2026-03-31T07:38:14.664Z"
 }
