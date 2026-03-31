@@ -877,21 +877,19 @@ async function githubSave(manual = false) {
   }
 }
 
-async function githubLoad(manual = false) {
+async function githubLoad(manual = false, showResult = false) {
   const cfg = getGhConfig();
   const log = document.getElementById('diag-log');
   if (manual) { log.style.display = 'block'; log.textContent = ''; }
   const addLog = line => { if (manual) log.textContent += line + '\n'; };
 
   if (!cfg.owner || !cfg.repo || !cfg.token) {
-    addLog('❌ Paramètres manquants');
-    if (manual) showToast('⚙️ Configurez GitHub d\'abord');
+    if (manual || showResult) showToast('⚙️ Configurez GitHub d\'abord');
     return;
   }
 
   const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
   addLog('URL: ' + url);
-  addLog('');
   setSyncStatus('busy', 'Restauration…');
 
   try {
@@ -901,17 +899,13 @@ async function githubLoad(manual = false) {
     addLog('→ HTTP ' + res.status);
 
     if (res.status === 404) {
-      addLog('❌ Fichier data.json introuvable.');
-      addLog('→ Faites d\'abord une SYNC pour créer le fichier.');
       setSyncStatus('err', 'data.json absent');
-      if (manual) showToast('❌ Faites d\'abord une SYNC pour créer le fichier', 5000);
+      if (manual || showResult) showToast('❌ Faites d\'abord une SYNC pour créer le fichier', 5000);
       return;
     }
     if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      addLog('❌ Erreur HTTP ' + res.status);
-      addLog(txt.slice(0, 200));
       setSyncStatus('err', `Erreur ${res.status}`);
+      if (manual || showResult) showToast(`❌ Erreur GitHub ${res.status}`, 5000);
       return;
     }
 
@@ -920,11 +914,9 @@ async function githubLoad(manual = false) {
     addLog('   content présent: ' + !!fileData.content);
     addLog('   content (50 cars): ' + String(fileData.content).slice(0,50));
     const clean = fileData.content.replace(/\s/g, '');
-    addLog('   après nettoyage (50): ' + clean.slice(0,50));
     let decoded;
     try {
       const bytes = Uint8Array.from(atob(clean), c => c.charCodeAt(0));
-      addLog('   bytes OK, longueur: ' + bytes.length);
       const text = new TextDecoder().decode(bytes);
       addLog('   texte (80 cars): ' + text.slice(0,80));
       decoded = JSON.parse(text);
@@ -932,33 +924,29 @@ async function githubLoad(manual = false) {
     } catch(de) {
       addLog('   ❌ Erreur décodage: ' + de.message);
       setSyncStatus('err', 'Erreur décodage');
+      if (manual || showResult) showToast('❌ Erreur décodage: ' + de.message, 5000);
       return;
     }
+
     if (decoded.sessions && Array.isArray(decoded.sessions)) {
       sessions = decoded.sessions;
-      addLog('   ' + sessions.length + ' séances chargées');
-      try { saveData(); addLog('   saveData OK'); } catch(e) { addLog('   ❌ saveData: '+e.message); }
-      try { renderStudents(); addLog('   renderStudents OK'); } catch(e) { addLog('   ❌ renderStudents: '+e.message); }
-      try { renderBilan(); addLog('   renderBilan OK'); } catch(e) { addLog('   ❌ renderBilan: '+e.message); }
-      try { renderHist(); addLog('   renderHist OK'); } catch(e) { addLog('   ❌ renderHist: '+e.message); }
-      try { updateBadge(); addLog('   updateBadge OK'); } catch(e) { addLog('   ❌ updateBadge: '+e.message); }
+      try { saveData(); } catch(e) {}
+      try { renderStudents(); } catch(e) {}
+      try { renderBilan(); } catch(e) {}
+      try { renderHist(); } catch(e) {}
+      try { updateBadge(); } catch(e) {}
       const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-      addLog('✅ ' + sessions.length + ' séances restaurées à ' + now);
       setSyncStatus('ok', `Restauré à ${now} (${sessions.length} séances)`);
-      if (manual) {
-        showToast(`☁️ ${sessions.length} séances restaurées ✓`);
-        closeSettings();
-      }
+      if (manual || showResult) showToast(`☁️ ${sessions.length} séances restaurées ✓`);
+      if (manual) closeSettings();
     } else {
-      addLog('❌ Format JSON invalide');
       setSyncStatus('err', 'Format invalide');
-      if (manual) showToast('❌ Fichier GitHub invalide');
+      if (manual || showResult) showToast('❌ Fichier GitHub invalide');
     }
   } catch(e) {
     addLog('❌ Erreur: ' + e.message);
-    addLog('→ URL construite: ' + url);
     setSyncStatus('err', 'Erreur réseau');
-    if (manual) showToast('❌ ' + e.message, 6000);
+    if (manual || showResult) showToast('❌ ' + e.message, 6000);
   }
 }
 
@@ -1267,7 +1255,8 @@ if (_cfg.owner && _last) {
 }
 // Restauration automatique au chargement si GitHub configuré
 if (_cfg.owner && _cfg.repo && _cfg.token) {
-  githubLoad(false);
+  setSyncStatus('busy', 'Restauration auto…');
+  setTimeout(() => githubLoad(false, true), 800);
 }
 </script>
 </body>
