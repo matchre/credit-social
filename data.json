@@ -1,9 +1,9 @@
 {
   "sessions": [
     {
-      "id": 1774942888686,
-      "title": "mardi 31 mars",
-      "date": "2026-03-31T07:41:28.686Z",
+      "id": 1774943005034,
+      "title": "mardi 31 marsend",
+      "date": "2026-03-31T07:43:25.034Z",
       "notes": {
         "BEDOUI Wassim": 20,
         "BENNOUAR Melina": 20,
@@ -204,5 +204,5 @@
       "details": {}
     }
   ],
-  "exportedAt": "2026-03-31T07:41:28.951Z"
+  "exportedAt": "2026-03-31T07:43:25.462Z"
 }
